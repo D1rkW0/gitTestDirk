@@ -1,0 +1,24 @@
+﻿Resource-Center
+
+a) Data Acquisition and exlimination of duplicates
+
+- create SHA256-Checksums of all files (recursive) from the respective root folder using fsum.exe:
+- in Notepad++	use: TextFX > Tools > Sort lines case insensitive
+
+- or/and import in database: 
+	structure:	HASH ?SHA256*relativeFilepathAndFilename
+	columns:	HASH type   relativeFilepathAndFilename  (and add rootFolderPath, i.e.: "C:\Backup\Hand over documents Addise 2011-08-10")
+
+	additional colums for analysis: hasDuplicates (yes/no), file date (last modified - DateTime), size (byte), scheduledForDelete (yes/no), isDeleted (yes/no), isCorrupt (yes/no)
+	
+	file date: (get via dir /S recursive) or 
+	file date: maybe by recursing via VisualBasic using "rootFolderPath\relativeFilepathAndFilename" via FilesystemObject - get FileDate
+	
+	
+	create new master file table: ID is HASH -> this will be used as reference to filenames-Table (above)
+	
+-> delete all duplicates which have newer file dates, but keep information of folder structure
+
+-> check for corrupt files 
+   search in n++ for "dulla"
+-> check archives (incl. docx, xlsx etc) via 7zip (as batch, recursive)
