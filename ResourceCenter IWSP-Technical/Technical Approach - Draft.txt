@@ -15,7 +15,7 @@ a) Data Acquisition and exlimination of duplicates
 	file date: maybe by recursing via VisualBasic using "rootFolderPath\relativeFilepathAndFilename" via FilesystemObject - get FileDate
 	
 	
-	create new master file table: ID is HASH -> this will be used as reference to filenames-Table (above)
+	create new master file table: ID is HASH -> this will be used as reference (foreign key) to filenames-Table (above)
 	
 -> delete all duplicates which have newer file dates, but keep information of folder structure
 
