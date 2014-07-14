@@ -85,11 +85,11 @@ echo   1) Creating list of hidden+system files...  (please wait)
 IF EXIST _HiddenAndSystemFiles.txt    del _HiddenAndSystemFiles.txt
 IF EXIST _No_HiddenAndSystemFiles.txt del _No_HiddenAndSystemFiles.txt
 echo ; List of Hidden+System files in folder:   *%cd%> _HiddenAndSystemFiles.txt
-dir    *.* /A:HS /S /R    >> _HiddenAndSystemFiles.txt 2>NUL
-:: dir *.* /A:HS /S /R /B >> _HiddenAndSystemFiles.txt 2>NUL
+:: dir  /A:HS /S    >> _HiddenAndSystemFiles.txt 2>NUL
+dir     /A:HS /S /B >> _HiddenAndSystemFiles.txt 2>NUL
 ::      /A:HS    Attributes: H..hidden, S..System Files
 ::      /S       Displays files in specified directory and all subdirectories.
-::      /R       Display alternate data streams of the file.
+::      /R       Display alternate data streams of the file. [Invalid option under WinXP !]
 ::      /B       Uses bare format (no heading information or summary).
 if ERRORLEVEL 1 ( echo ; *** No hidden or system files found.>> _HiddenAndSystemFiles.txt ) ELSE goto DeleteOldHashfile
 ren _HiddenAndSystemFiles.txt _No_HiddenAndSystemFiles.txt
