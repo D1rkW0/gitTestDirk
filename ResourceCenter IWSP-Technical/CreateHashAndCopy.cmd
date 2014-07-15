@@ -1,4 +1,7 @@
 @echo off
+REM Backup current folder
+set oldpath=%cd%
+echo Script started from oldpath = %oldpath%
 echo.
 echo ================= CreateHashAndCopy =================
 if %1.==--help. goto Help
@@ -11,7 +14,7 @@ goto Initialize
 
 :Help
 echo Author:  Dirk Wolff, EKHC IWSP Technical Advisor
-echo Version: 1.0   ---   Date: 2014-07-09
+echo Version: 1.0   ---   Date: 2014-07-14
 echo.
 echo Usage:   CreateHashAndCopy [HashAlgorithm] [SourceFolder] [TargetFolder]
 echo.
@@ -41,16 +44,16 @@ echo.
 goto End
 
 :Initialize
-REM Prepend path to fsum.exe to current environment (path variable) - works if started with fsum being in current folder
+REM Check if fsum.exe can be started
+fsum.exe 2>NUL
+if %ERRORLEVEL%==0 goto ReadHashAlgorithm
+REM Prepend path to fsum.exe to the current search path (environment variable %path%) if able to locate:
 IF EXIST "%cd%\fsum.exe" set path=%cd%;%path%
-fsum 2>NUL
-if ERRORLEVEL 0 goto ReadHashAlgorithm
-
 REM fsum.exe is not found in path or current directory, so try to locate it elsewhere:
-IF EXIST "C:\Backup\fsum-program\fsum.exe" set path=C:\Backup\fsum-program;%path%
 IF EXIST "%CD:~0,2%\fsum-program\fsum.exe" set path=%CD:~0,%\fsum-program;%path%
+IF EXIST "C:\Backup\fsum-program\fsum.exe" set path=C:\Backup\fsum-program;%path%
 :: maybe add other options, where fsum.exe could be found
-fsum 2>NUL
+fsum.exe 2>NUL
 if ERRORLEVEL 0 goto ReadHashAlgorithm
 echo Error: fsum.exe cannot be found in the system search path (%%path%%) or current
 echo directory, but is needed for creating checksums/hashes.    Exiting Script...
@@ -65,8 +68,8 @@ if %1.=="". goto CheckSourceFolder
 set hash=%~1
 
 :CheckSourceFolder
-REM Check existance of Source Folder:
 echo   Hash-Algorithm: %hash%
+REM Check existance of Source Folder:
 if %2.==.   goto HiddenFiles
 if %2.=="". goto HiddenFiles
 if EXIST %2 goto SwitchToSourceFolder
@@ -84,15 +87,18 @@ echo   Source Folder:  %cd%
 echo   1) Creating list of hidden+system files...  (please wait)
 IF EXIST _HiddenAndSystemFiles.txt    del _HiddenAndSystemFiles.txt
 IF EXIST _No_HiddenAndSystemFiles.txt del _No_HiddenAndSystemFiles.txt
-echo ; List of Hidden+System files in folder:   *%cd%> _HiddenAndSystemFiles.txt
-:: dir  /A:HS /S    >> _HiddenAndSystemFiles.txt 2>NUL
-dir     /A:HS /S /B >> _HiddenAndSystemFiles.txt 2>NUL
+echo ; List of Hidden files in folder:   *%cd%>  _HiddenAndSystemFiles.txt
+dir     /A:H  /S /B >> _HiddenAndSystemFiles.txt 2>NUL
 ::      /A:HS    Attributes: H..hidden, S..System Files
 ::      /S       Displays files in specified directory and all subdirectories.
 ::      /R       Display alternate data streams of the file. [Invalid option under WinXP !]
 ::      /B       Uses bare format (no heading information or summary).
-if ERRORLEVEL 1 ( echo ; *** No hidden or system files found.>> _HiddenAndSystemFiles.txt ) ELSE goto DeleteOldHashfile
-ren _HiddenAndSystemFiles.txt _No_HiddenAndSystemFiles.txt
+if ERRORLEVEL 1 ( echo ; *** No hidden files found.>> _HiddenAndSystemFiles.txt ) 
+echo.               >> _HiddenAndSystemFiles.txt
+echo ; List of System files in folder:   *%cd%>> _HiddenAndSystemFiles.txt
+dir     /A:S  /S /B >> _HiddenAndSystemFiles.txt 2>NUL
+if ERRORLEVEL 1 ( echo ; *** No system files found.>> _HiddenAndSystemFiles.txt ) ELSE goto DeleteOldHashfile
+REM ren _HiddenAndSystemFiles.txt _No_HiddenAndSystemFiles.txt
 
 :DeleteOldHashfile
 IF EXIST "_Checksums_%hash%.md5.txt" del "_Checksums_%hash%.md5.txt"
@@ -102,10 +108,11 @@ IF EXIST "_Checksums_%hash%.md5.txt" goto DeleteOldHashfile
 echo   2) Creating Checksums/Hashes of all files in source folder... (please wait)
 REM insert current path into new document
 echo ; CurrentPath: 		*%cd%> "_Checksums_%hash%.md5.txt"
+echo ; ComputerName:		*%computername%>> "_Checksums_%hash%.md5.txt"
 echo ; StartTime:   		*%date% %time%>> "_Checksums_%hash%.md5.txt"
 echo ; >> "_Checksums_%hash%.md5.txt"
 REM create checksums and save them in file: "_Checksums_%hash%.md5.txt"
-fsum -%hash% -r *.* >> "_Checksums_%hash%.md5.txt" 2>NUL
+fsum.exe -%hash% -r *.* >> "_Checksums_%hash%.md5.txt" 2>NUL
 echo ; >> "_Checksums_%hash%.md5.txt"
 echo ; EndTime:     		*%date% %time%>> "_Checksums_%hash%.md5.txt"
 
@@ -125,12 +132,14 @@ goto End
 echo   3) Now copying files...  (please wait)
 :: echo   Source Folder:  %cd%
 echo   Destination:    %3
-xcopy    *.* %3 /S /V /C /G    /K    /Y > _xcopy.log 2>NUL
-:: xcopy *.* %3 /S /V /C /G    /K /O /Y > _xcopy.log 2>NUL
-:: xcopy *.* %3 /E /V /C /G /H /K /O /Y > _xcopy.log 2>NUL
+xcopy    *.* %3 /M /S /V /C /G          /Y > _xcopy.log 2>NUL
+:: xcopy *.* %3    /S /V /C /G    /K /O /Y > _xcopy.log 2>NUL
+:: xcopy *.* %3    /E /V /C /G /H /K /O /Y > _xcopy.log 2>NUL
 REM copy logfile:
-xcopy    _xcopy.log %3 /C /G    /K    /Y >NUL 2>NUL
+xcopy _xcopy.log %3 /G /Y >NUL 2>NUL
 REM Arguments explained:
+::  /M           Copies only files with the archive attribute set,
+::               turns off the archive attribute.
 ::  /S           Copies directories and subdirectories except empty ones.
 ::  /E           Copies directories and subdirectories, including empty ones.
 ::               Same as /S /E. May be used to modify /T.
@@ -156,3 +165,6 @@ if ERRORLEVEL 1 ( echo   Some errors occurred. For details see file: _FileCrossc
 
 :End
 echo ============ CreateHashAndCopy: Finished ============
+REM Change folder back to oldpath
+cd /D %oldpath%
+set oldpath=
