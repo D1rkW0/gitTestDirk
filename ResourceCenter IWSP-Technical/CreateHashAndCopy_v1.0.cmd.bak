@@ -1,18 +1,24 @@
 @echo off
 REM -- Improved Batch Script Version without changing current directory --
+REM    lines starting with ::: should be deleted at the end (and in between)
+::: REM Backup current folder (delete this part)
+set oldpath=%cd%
+echo.
+echo ::: Script started from oldpath = %oldpath%
+::: until here
 echo.
 echo ================= CreateHashAndCopy =================
-if "%~1".==--help. goto Help
-if "%~1".==-h.     goto Help
-if "%~1".==--?.    goto Help
-if "%~1".==-?.     goto Help
-if "%~1".==/help.  goto Help
-if "%~1".==/?.     goto Help
+if %1.==--help. goto Help
+if %1.==-h.     goto Help
+if %1.==--?.    goto Help
+if %1.==-?.     goto Help
+if %1.==/help.  goto Help
+if %1.==/?.     goto Help
 goto Initialize
 
 :Help
 echo Author:  Dirk Wolff, EKHC IWSP Technical Advisor
-echo Version: 1.1   ---   Date: 2014-07-17
+echo Version: 1.1   ---   Date: 2014-07-15
 echo.
 echo Usage:   CreateHashAndCopy [HashAlgorithm] [SourceFolder] [TargetFolder] [CopyMode]
 echo.
@@ -50,19 +56,18 @@ echo          around them.
 echo.
 echo Requirements:
 echo Script must be started from a folder, which contains fsum.exe, or the path to fsum.exe must be included in the global PATH variable.
-echo fsum.exe can be downloaded from:     www.slavasoft.com
 echo.
 goto End
 
 :Initialize
 REM Check if fsum.exe can be started (i.e. either in current directory or already included in search path)
+echo ::: search path when skript starts: %path%
 fsum.exe 2>NUL
 if %ERRORLEVEL%==0 goto ReadHashAlgorithm
 REM fsum.exe is not found in search path or current directory, so try to locate it elsewhere:
 REM If found, prepend location to current search path (environment variable %path%), and call fsum.exe to check. 
 REM If successful goto ReadHashAlgorithm.
 ::  Note: different commands can be placed in one line when separated by "&&"
-IF EXIST "%WinDir%\fsum.exe"                ( set path=%WinDir%;%path%&&                fsum.exe 2>NUL  &&  if %ERRORLEVEL%==0 goto ReadHashAlgorithm )
 IF EXIST "%ProgramFiles%\fsum\fsum.exe"     ( set path=%ProgramFiles%\fsum;%path%&&     fsum.exe 2>NUL  &&  if %ERRORLEVEL%==0 goto ReadHashAlgorithm )
 IF EXIST "%ProgramFiles%\fsum-program\fsum.exe" ( set path=%ProgramFiles%\fsum-program;%path%&& fsum.exe 2>NUL && if %ERRORLEVEL%==0 goto ReadHashAlgorithm )
 IF EXIST "%CD:~0,2%\fsum-program\fsum.exe"  ( set path=%CD:~0,%\fsum-program;%path%&&   fsum.exe 2>NUL  &&  if %ERRORLEVEL%==0 goto ReadHashAlgorithm )
@@ -101,7 +106,7 @@ REM If Argument2 (Source Folder) is empty, use default and skip to next section 
 if "%~2"=="" goto CheckTargetFolder
 REM If Argument2 (Source Folder) is specified, check existance of Source Folder:
 if EXIST "%~2" set sourcefolder=%~2
-if NOT EXIST "%~2" (
+if NOT EXIST "%~2" ( 
 	echo   Error: Source Folder "%~2" does not exist!
 	echo   Files cannot be checked.                      Exiting Script...
 	goto End
@@ -109,7 +114,7 @@ if NOT EXIST "%~2" (
 
 :CheckTargetFolder
 REM Source folder = current folder (or argument %2)
-REM Target folder = given in argument %3  (if empty, CopyingFiles below will be skipped)
+REM Target folder = given in argument %3  (if empty, CopyingFiles will be skipped)
 if "%~3"=="" goto GetCopyMode
 if EXIST "%~df3" goto GetCopyMode
 REM Target Folder does not yet exist. Try to create target folder:
@@ -118,37 +123,34 @@ md "%~df3" 2>NUL
 :GetCopyMode
 REM Read Arg4 / Arg5 (optional)
 ::  Note: If 2 Arguments are given here without quotes, then they are retrieved as Arg4 (%4) and Arg5 (%5)
-::        But if they are combined in one Argument like "/A /D" then the second one will not be checked below for correctness.
-set CopyMode=   && REM In this line: set CopyMode to a space character (to be not empty)
-REM If Arg4 and Arg5 are empty, continue with next step (GetCopyModeEnd)
-if "%~4%~5"=="" (set CopyMode=/M&& goto GetCopyModeEnd)
+::        But they are combined in one Argument like "/A /D" then the second one will not be checked below for correctness.
+REM Set default for CopyMode (only changed files [/M])
+set CopyMode=/M
+REM If Arg4 and Arg5 are empty, continue with next step (HiddenFiles)
+if "%~4%~5"=="" goto HiddenFiles
+REM Check for Argument /ALL (overruling any other arguments given here)
+if /I "%~4"=="/ALL"  ( set CopyMode=ALL&& goto HiddenFiles )
+if /I "%~5"=="/ALL"  ( set CopyMode=ALL&& goto HiddenFiles )
+REM Read given xcopy arguments
+set CopyMode=     && REM set CopyMode to a space character (so not to be empty)
+::: echo CopyMode now empty string: "%CopyMode%"
+if "%~4"=="" goto ReadArg5
+	set tmpCopyMode=%~4
+:::	echo 	Arg4: "%tmpCopyMode%" -- first 2 chars: "%tmpCopyMode:~0,2%"
+	if /I "%tmpCopyMode:~0,2%"=="/A" set CopyMode=%tmpCopyMode%
+	if /I "%tmpCopyMode:~0,2%"=="/M" set CopyMode=%tmpCopyMode%
+	if /I "%tmpCopyMode:~0,2%"=="/D" set CopyMode=%tmpCopyMode%
+
 :ReadArg5
-if "%~5"=="" goto ReadArg4
-set tmpCopyMode=%~5
-REM Check for Argument /ALL (overruling any other arguments given here)
-if /I "%tmpCopyMode:~0,4%"=="/ALL" ( set CopyMode=ALL && set tmpCopyMode=ALL files/folders && goto GetCopyModeEnd )
-REM Read given xcopy arguments
-if /I "%tmpCopyMode:~0,2%"=="/A" set CopyMode=%tmpCopyMode% %CopyMode%
-if /I "%tmpCopyMode:~0,2%"=="/M" set CopyMode=%tmpCopyMode% %CopyMode%
-if /I "%tmpCopyMode:~0,2%"=="/D" set CopyMode=%tmpCopyMode% %CopyMode%
-:ReadArg4
-if "%~4"=="" goto GetCopyModeEnd
-set tmpCopyMode=%~4
-REM Check for Argument /ALL (overruling any other arguments given here)
-if /I "%tmpCopyMode:~0,4%"=="/ALL" ( set CopyMode=ALL && set tmpCopyMode=ALL files/folders && goto GetCopyModeEnd )
-REM Read given xcopy arguments
-if /I "%tmpCopyMode:~0,2%"=="/A" set CopyMode=%tmpCopyMode% %CopyMode%
-if /I "%tmpCopyMode:~0,2%"=="/M" set CopyMode=%tmpCopyMode% %CopyMode%
-if /I "%tmpCopyMode:~0,2%"=="/D" set CopyMode=%tmpCopyMode% %CopyMode%
+::: echo CopyMode after reading Arg4: "%CopyMode%"
+if "%~5"=="" goto HiddenFiles
+	set tmpCopyMode=%~5
+	if /I "%tmpCopyMode:~0,2%"=="/A" set CopyMode=%CopyMode% %tmpCopyMode%
+	if /I "%tmpCopyMode:~0,2%"=="/M" set CopyMode=%CopyMode% %tmpCopyMode%
+	if /I "%tmpCopyMode:~0,2%"=="/D" set CopyMode=%CopyMode% %tmpCopyMode%
+::: echo CopyMode after reading Arg5: "%CopyMode%"
 :GetCopyModeEnd
-REM If no valid Arguments have been given, switch back to default behaviour (only changed files [/M])
-if    "%CopyMode: =%"==""    set CopyMode=/M
-:: if "%CopyMode:~0,1"==" "  set CopyMode=/M
-if /I "%CopyMode: =%"=="/M"  set CopyMode=/M
-IF "%CopyMode:~0,3%"=="ALL"    set CopyMode=  && REM Set CopyMode to space string, so that xcopy will have default behaviour (copying ALL files)
-REM Update tmpCopyMode to show final arguments
-IF "%CopyMode:~0,1%"=="/"      set tmpCopyMode=%CopyMode%
-IF "%CopyMode%"=="/M"          set tmpCopyMode=%CopyMode% (default)
+set tmpCopyMode=
 
 :HiddenFiles
 REM Create a list of hidden files and folders (to see if anything needs to be included)
@@ -169,14 +171,12 @@ dir "%sourcefolder%\*.*" /A:S /S /B           >> "%sourcefolder%\_HiddenAndSyste
 if ERRORLEVEL 1 ( echo ; *** No system files found.>> "%sourcefolder%\_HiddenAndSystemFiles.txt" ) ELSE goto DeleteOldHashfile
 
 :DeleteOldHashfile
-REM Deleting old the checksum/hash file (i.e. similiar name)
 IF EXIST "%sourcefolder%\_Checksums_%hash%.md5.txt" del "%sourcefolder%\_Checksums_%hash%.md5.txt"
 IF EXIST "%sourcefolder%\_Checksums_%hash%.md5.txt" goto DeleteOldHashfile
-REM If target folder is specified (i.e. if files will be copied), delete rename old _xcopy.log file to .bak
 IF EXIST "%~df3" (
-	IF EXIST "%sourcefolder%\_xcopy.log.bak" del "%sourcefolder%\_xcopy.log.bak" 2>NUL
-	IF EXIST "%sourcefolder%\_xcopy.log"     ren "%sourcefolder%\_xcopy.log" "_xcopy.log.bak" 2>NUL
-	)
+	IF EXIST "%sourcefolder%\_xcopy.log.bak" del "%sourcefolder%\_xcopy.log.bak" 2>NUL 
+	IF EXIST "%sourcefolder%\_xcopy.log"     ren "%sourcefolder%\_xcopy.log" "%sourcefolder%\_xcopy.log.bak" 2>NUL 
+)
 
 :CreateHashes
 echo   2) Creating Checksums/Hashes of all files in source folder... (please wait)
@@ -197,16 +197,15 @@ if NOT EXIST "%~df3" (
 	echo   Error: Target Folder "%~df3" could not be created. Files cannot be copied.
 	goto End
 )
+REM Update CopyMode Variable
+IF "%CopyMode%"=="ALL" set CopyMode=    && REM Set CopyMode to space string, so that xcopy will have default behaviour (copying ALL files)
 echo   3) Now copying files...  (please wait)
 echo      Source Folder:  "%sourcefolder%"
 echo      Destination:    "%~df3"
-echo      CopyMode:       %tmpCopyMode%
 REM copy files and folders now
-xcopy "%sourcefolder%\*.*"   "%~df3" %CopyMode% /S /V /C /G /Y >"%temp%\_xcopy.log" 2>NUL 
+xcopy "%sourcefolder%\*.*"   "%~df3\" %CopyMode% /S /V /C /G /Y >"%sourcefolder%\_xcopy.log" 2>NUL 
 REM copy the xcopy-logfile
-xcopy    "%temp%\_xcopy.log" "%sourcefolder%" /G /Y >NUL 2>NUL
-xcopy    "%temp%\_xcopy.log" "%~df3"          /G /Y >NUL 2>NUL
-del      "%temp%\_xcopy.log"
+xcopy "%sourcefolder%\_xcopy.log" "%~df3\" /G /Y >NUL 2>NUL
 REM Arguments explained:
 ::  /M           Copies only files with the archive attribute set,
 ::               turns off the archive attribute.
@@ -224,15 +223,20 @@ REM Arguments explained:
 ::               existing destination file.
 
 :VerifyingFiles
+echo ::: Change Drive+Directory to match Target/Destination Folder (for checking copied files).
+echo.
+::: cd /D %~df3
 echo   4) Verifying copied files...  (please wait)
 fsum.exe -c  "-d%~df3\."  "%~df3\_Checksums_%hash%.md5.txt" > "%~df3\_FileCrosscheck.txt" 2>NUL
 ::  report only failed files:
 ::  fsum.exe -c -jf "_Checksums_%hash%.md5.txt" > _FileCrosscheck.txt 2>NUL
-if ERRORLEVEL 1 ( echo      Some errors occurred. For details see file: _FileCrosscheck.txt ) ELSE echo      Success: All files were copied correctly.
+if ERRORLEVEL 1 ( echo   Some errors occurred. For details see file: _FileCrosscheck.txt ) ELSE echo   All files were copied correctly.
 
 :End
 echo ============ CreateHashAndCopy: Finished ============
-REM Delete temporary variables
+REM Change folder back to oldpath
+::: cd /D %oldpath%
+set oldpath=
 set sourcefolder=
 set CopyMode=
 set tmpCopyMode=
