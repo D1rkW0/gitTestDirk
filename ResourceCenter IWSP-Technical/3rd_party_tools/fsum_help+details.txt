@@ -1,0 +1,37 @@
+SlavaSoft Optimizing Checksum Utility - fsum 2.52.00337
+Implemented using SlavaSoft QuickHash Library <www.slavasoft.com>
+Copyright (C) SlavaSoft Inc. 1999-2007. All rights reserved.
+
+----------------------------------------------------------------------
+Info:              http://www.slavasoft.com/fsum/index.htm
+Freeware License:  http://www.slavasoft.com/fsum/license-agreement.htm
+Download:          http://www.slavasoft.com/zip/fsum.zip
+----------------------------------------------------------------------
+
+Usage: fsum.exe <OPTIONS>... <FILE>...
+
+Options:
+
+   -c or --check  -  check sums against given list
+   -d<directory>  -  set working directory
+   -jf            -  print only failed lines while checking
+   -jm            -  use MD5 format
+   -js            -  use SFV format
+   -jnc           -  supress comments
+   -r             -  recurse subdirectories
+   -s or --status -  don't output anything, status code shows success
+   -w or --warn   -  warn about improperly formatted checksum lines
+
+   -md2           -  include MD2 algorithm
+   -md4           -  include MD4 algorithm
+   -md5           -  include MD5 algorithm
+   -sha1          -  include SHA-1 algorithm
+   -sha256        -  include SHA-2( 256 ) algorithm
+   -sha384        -  include SHA-2( 384 ) algorithm
+   -sha512        -  include SHA-2( 512 ) algorithm
+   -rmd           -  include RIPEMD-160 algorithm
+   -tiger         -  include TIGER algorithm
+   -panama        -  include PANAMA algorithm
+   -adler         -  include ADLER32 algorithm
+   -crc32         -  include CRC32 algorithm
+   -edonkey       -  include EDONKEY algorithm
