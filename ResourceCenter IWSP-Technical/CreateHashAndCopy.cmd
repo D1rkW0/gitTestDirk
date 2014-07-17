@@ -100,9 +100,9 @@ set sourcefolder=%cd%
 REM If Argument2 (Source Folder) is empty, use default and skip to next section (CheckTargetFolder):
 if "%~2"=="" goto CheckTargetFolder
 REM If Argument2 (Source Folder) is specified, check existance of Source Folder:
-if EXIST "%~2" set sourcefolder=%~2
+if EXIST "%~2" set sourcefolder=%~df2
 if NOT EXIST "%~2" (
-	echo   Error: Source Folder "%~2" does not exist!
+	echo   Error: Source Folder "%~df2" does not exist!
 	echo   Files cannot be checked.                      Exiting Script...
 	goto End
 )
